@@ -14,18 +14,26 @@
 #include <string.h>
 
 int numfiles=0;
-char hashes[][50];
+char hashes[500][50];
 char tophashes[][50];
 int numtophashes =0;
 
 char * readFile(char *);
 void hash(char *);
-int tree(char[][50], int);
+void tree(char[][50], int);
+
+struct node {
+    char data[50];
+    struct node *right;
+    struct node *left;
+};
 
 int main()
 {
     int userInput;
-    char *filenames[100];
+    char *filenames[500];
+
+    //give user instructions and get user input
     while(1)
     {
         printf("         Merkle Hash Tree\n");
@@ -33,7 +41,7 @@ int main()
         printf("         1: Add new file(s)\n");
         printf("         2: Compute top hash\n");
         printf("         3: Start new tree\n");
-        printf("         4: Print top hashes\n");
+        printf("         4: Exit\n");
         printf("--------------------------------------\n");
         scanf("%d", &userInput);
 
@@ -42,7 +50,7 @@ int main()
             printf("Enter file names separated by commas (e.g. file1.txt,file2.txt,file3.txt)\n");
             fflush(stdin);
             int length=0;
-            char buffer[1024];
+            char buffer[2000];
             char *aux;
             scanf("%s",&buffer);
             aux=strtok(buffer, ",");
@@ -80,18 +88,16 @@ int main()
                 i++;
             }
             numfiles = 0;
-
         }
         if(userInput==4)
         {
-            for(int i = 0; i < numtophashes; i++)
-            {
-                printf("Top Hashes: %s\n",tophashes[i]);
-            }
+            break;
         }
     }
     return 0;
 }
+
+//store the contents of a file in a buffer
 char * readFile(char *filename)
 {
     fflush(stdin);
@@ -123,6 +129,8 @@ char * readFile(char *filename)
     fclose(fp);
     return source;
 }
+
+//compute the has value of the given file content
 void hash(char *filedata)
 {
     char hashedfile[50];
@@ -141,9 +149,10 @@ void hash(char *filedata)
     strcpy(hashes[numfiles-1],hexhashedfile);
 }
 
-int tree(char hashes_param[][50], int numnodes)
+//recursively concatenate and hash provided hashes at incremental depths of the tree.
+void tree(char hashes_param[][50], int numnodes)
 {
-    char hashcombined[100][50];
+    char hashcombined[200][50];
     int count = 0;
     printf("In tree function\n");
     if(numnodes==0)
@@ -155,20 +164,6 @@ int tree(char hashes_param[][50], int numnodes)
     {
         printf("Top Hash is: %s\n", hashes_param[0]);
         strcpy(tophashes[numtophashes], hashes_param[0]);
-/*
-        if(numtophashes==0)
-        {
-            strcpy(tophashes[0], hashes_param[0]);
-        numtophashes++;
-
-        }
-        else
-        {
-            strcpy(tophashes[1], hashes_param[0]);
-        numtophashes++;
-
-        }
-        */
         return 1;
     }
 
@@ -180,15 +175,8 @@ int tree(char hashes_param[][50], int numnodes)
             //odd one out
             strcpy(hashcombined[count],hashes_param[numnodes-1]);
             count++;
-            printf("Odd hash out: %s\n",hashes_param[numnodes-1]);
-            printf("--------------------------------------\n");
-            printf("New list of Hashes\n");
-            printf("--------------------------------------\n");
 
-            for(int i = 0; i < count; i++)
-            {
-                printf("Hashes for a Depth: %s\n", hashcombined[i]);
-            }
+            printf("Odd hash out: %s\n",hashes_param[numnodes-1]);
             char hashedresult[50];
             char hexhashedresult[50];
             SHA1(hashedresult,hashes_param[numnodes-1],strlen(hashes_param[numnodes-1]));
@@ -198,7 +186,7 @@ int tree(char hashes_param[][50], int numnodes)
                 sprintf(hexhashedresult + (2*i),"%02x", hashedresult[i]&0xff);
             }
             printf("\n");
-            return 1 + tree(hashcombined,count);
+            return tree(hashcombined,count);
         }
         else
         {
@@ -216,12 +204,13 @@ int tree(char hashes_param[][50], int numnodes)
                 sprintf(hexhashedresult + (2*i),"%02x", hashedresult[i]&0xff);
             }
             printf("\n");
-
             printf("Hashed concatenated hash: %s\n",hexhashedresult);
             strcpy(hashcombined[count],hexhashedresult);
             count++;
             i+=2;
         }
+
     }
-    return 1 + tree(hashcombined,count);
+    printf("\n");
+    return tree(hashcombined,count);
 }
